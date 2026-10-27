@@ -4,14 +4,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-/** Драйвер практичної роботи №7: поліморфна колекція одягу. */
+/** Драйвер практичної роботи №8: поліморфна колекція одягу. */
 public class Main {
 
     /** Запускає консольне меню. */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         ArrayList<Clothes> items = new ArrayList<Clothes>();
-        System.out.println("Практична робота №7. Варіант 1. Ієрархія одягу.");
+        System.out.println("Практична робота №8. Варіант 1. Ієрархія одягу.");
 
         boolean running = true;
         while (running) {
@@ -38,8 +38,8 @@ public class Main {
     /** Створює об'єкти потрібного типу без попереднього заповнення колекції. */
     private static void create(Scanner scanner, ArrayList<Clothes> items) {
         System.out.println("0 - Назад, 1 - Clothes, 2 - Pants, 3 - Shirts");
-
-        int type = ConsoleInput.readInt(scanner, "Тип: ", 0, 3);
+        System.out.println("4 - Jeans, 5 - TShirt");
+        int type = ConsoleInput.readInt(scanner, "Тип: ", 0, 5);
         if (type == 0) return;
         String name = ConsoleInput.readText(scanner, "Назва: ");
         int size = ConsoleInput.readInt(scanner, "Розмір (32-70): ", 32, 70);
@@ -60,6 +60,16 @@ public class Main {
                 case 3:
                     int sleeve = ConsoleInput.readInt(scanner, "Рукав (1-120 см): ", 1, 120);
                     item = new Shirts(name, size, price, color, quantity, season, sleeve);
+                    break;
+                case 4:
+                    int jeansWaist = ConsoleInput.readInt(scanner, "Талія (50-140 см): ", 50, 140);
+                    int weight = ConsoleInput.readInt(scanner, "Щільність деніму (5-30 oz): ", 5, 30);
+                    item = new Jeans(name, size, price, color, quantity, season, jeansWaist, weight);
+                    break;
+                case 5:
+                    int shirtSleeve = ConsoleInput.readInt(scanner, "Рукав (1-120 см): ", 1, 120);
+                    String printText = ConsoleInput.readText(scanner, "Напис (або 'Без принта'): ");
+                    item = new TShirt(name, size, price, color, quantity, season, shirtSleeve, printText);
                     break;
                 default:
                     return;
