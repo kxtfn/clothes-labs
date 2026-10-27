@@ -3,16 +3,20 @@ package ua.edu.sumdu.oop;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.io.IOException;
+import java.nio.file.Path;
 
-/** Драйвер практичної роботи №8: поліморфна колекція одягу. */
+/** Драйвер практичної роботи №9: поліморфна колекція одягу. */
 public class Main {
+    /** Шлях до файлу, що використовується при завантаженні та збереженні. */
+    private static final Path DATA_FILE = Path.of("input.txt");
 
     /** Запускає консольне меню. */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-        ArrayList<Clothes> items = new ArrayList<Clothes>();
-        System.out.println("Практична робота №8. Варіант 1. Ієрархія одягу.");
-
+        ArrayList<Clothes> items = FileStorage.load(DATA_FILE);
+        System.out.println("Практична робота №9. Варіант 1. Ієрархія одягу.");
+        System.out.println("Зчитано об’єктів: " + items.size());
         boolean running = true;
         while (running) {
             System.out.println("\n1 - Створити новий об'єкт");
@@ -27,7 +31,7 @@ public class Main {
                     printAll(items);
                     break;
                 case 3:
-                    running = false;
+                    try { FileStorage.save(DATA_FILE, items); System.out.println("Дані збережено в input.txt."); running = false; } catch (IOException exception) { System.out.println("Не вдалося зберегти дані: " + exception.getMessage()); }
                     break;
                 default:
                     break;
