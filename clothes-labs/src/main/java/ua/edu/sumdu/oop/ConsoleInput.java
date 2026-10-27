@@ -47,4 +47,15 @@ public final class ConsoleInput {
         }
     }
 
+    /** Зчитує одну з чотирьох сезонних категорій. */
+    public static Season readSeason(Scanner scanner) {
+        while (true) {
+            String value = readText(scanner, "Сезон (SPRING/SUMMER/AUTUMN/WINTER): ");
+            try {
+                return Season.valueOf(value.toUpperCase(java.util.Locale.ROOT));
+            } catch (IllegalArgumentException exception) {
+                System.out.println("Помилка: невідомий сезон.");
+            }
+        }
+    }
 }

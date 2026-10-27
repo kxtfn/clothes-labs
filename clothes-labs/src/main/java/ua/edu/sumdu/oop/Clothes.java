@@ -2,24 +2,32 @@ package ua.edu.sumdu.oop;
 
 import java.util.Objects;
 
-/** Предмет одягу із перевіркою коректності властивостей. */
+/** Предмет одягу з перевіркою полів і характеристикою сезонності. */
 public class Clothes {
     private String name;
     private int size;
     private double price;
     private String color;
     private int quantity;
+    private Season season;
 
-    /**
-     * Створює предмет одягу та перевіряє всі поля.
-     * @throws IllegalArgumentException якщо дані некоректні
-     */
-    public Clothes(String name, int size, double price, String color, int quantity) {
+
+    /** Створює предмет одягу з коректними властивостями. */
+    public Clothes(String name, int size, double price, String color,
+                   int quantity, Season season) {
         setName(name);
         setSize(size);
         setPrice(price);
         setColor(color);
         setQuantity(quantity);
+        setSeason(season);
+
+    }
+
+    /** Конструктор копіювання всіх характеристик. */
+    public Clothes(Clothes original) {
+        this(Objects.requireNonNull(original, "Об'єкт для копіювання відсутній.").name,
+             original.size, original.price, original.color, original.quantity, original.season);
     }
 
     /** @return назва */
@@ -40,7 +48,7 @@ public class Clothes {
     }
     /** @return ціна */
     public double getPrice() { return price; }
-    /** @param price скінченна додатна ціна */
+    /** @param price додатна скінченна ціна */
     public void setPrice(double price) {
         if (!Double.isFinite(price) || price <= 0)
             throw new IllegalArgumentException("Ціна має бути додатним числом.");
@@ -56,32 +64,43 @@ public class Clothes {
     }
     /** @return кількість */
     public int getQuantity() { return quantity; }
-    /** @param quantity кількість не менша нуля */
+    /** @param quantity невід'ємна кількість */
     public void setQuantity(int quantity) {
         if (quantity < 0)
             throw new IllegalArgumentException("Кількість не може бути від'ємною.");
         this.quantity = quantity;
     }
+    /** @return пора року */
+    public Season getSeason() { return season; }
+    /** @param season ненульова пора року */
+    public void setSeason(Season season) {
+        if (season == null)
+            throw new IllegalArgumentException("Пору року потрібно вказати.");
+        this.season = season;
+    }
 
-    /** @return інформація про одяг */
+
+
+    /** @return дані про предмет одягу */
     @Override
     public String toString() {
         return "Clothes{name='" + name + "', size=" + size + ", price=" + price
-                + ", color='" + color + "', quantity=" + quantity + "}";
+                + ", color='" + color + "', quantity=" + quantity
+                + ", season=" + season + "}";
     }
 
-    /** @return true, якщо об'єкти однакові за полями */
+    /** Порівнює об'єкти одного класу за усіма полями. */
     @Override
     public boolean equals(Object other) {
         if (this == other) return true;
-        if (!(other instanceof Clothes)) return false;
+        if (other == null || getClass() != other.getClass()) return false;
         Clothes that = (Clothes) other;
         return size == that.size && Double.compare(price, that.price) == 0
                 && quantity == that.quantity && Objects.equals(name, that.name)
-                && Objects.equals(color, that.color);
+                && Objects.equals(color, that.color) && season == that.season;
     }
 
-    /** @return хеш за полями об'єкта */
+    /** @return хеш за усіма полями */
     @Override
-    public int hashCode() { return Objects.hash(name, size, price, color, quantity); }
+    public int hashCode() { return Objects.hash(name, size, price, color, quantity, season); }
 }

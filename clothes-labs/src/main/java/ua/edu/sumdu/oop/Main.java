@@ -4,13 +4,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Scanner;
 
-/** Драйвер роботи №5 з безпечним меню та ArrayList. */
+/** Драйвер практичної роботи №7: поліморфна колекція одягу. */
 public class Main {
-    /** Запускає програму. */
+
+    /** Запускає консольне меню. */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         ArrayList<Clothes> items = new ArrayList<Clothes>();
-        System.out.println("Практична робота №5. Варіант 1. Перевірка даних та JUnit.");
+        System.out.println("Практична робота №7. Варіант 1. Ієрархія одягу.");
+
         boolean running = true;
         while (running) {
             System.out.println("\n1 - Створити новий об'єкт");
@@ -33,27 +35,52 @@ public class Main {
         }
     }
 
-    /** Запитує дані та додає лише успішно створений об'єкт. */
+    /** Створює об'єкти потрібного типу без попереднього заповнення колекції. */
     private static void create(Scanner scanner, ArrayList<Clothes> items) {
+        System.out.println("0 - Назад, 1 - Clothes, 2 - Pants, 3 - Shirts");
+
+        int type = ConsoleInput.readInt(scanner, "Тип: ", 0, 3);
+        if (type == 0) return;
         String name = ConsoleInput.readText(scanner, "Назва: ");
         int size = ConsoleInput.readInt(scanner, "Розмір (32-70): ", 32, 70);
         double price = ConsoleInput.readPositiveDouble(scanner, "Ціна: ");
         String color = ConsoleInput.readText(scanner, "Колір: ");
         int quantity = ConsoleInput.readInt(scanner, "Кількість (0-100000): ", 0, 100000);
+        Season season = ConsoleInput.readSeason(scanner);
         try {
-            items.add(new Clothes(name, size, price, color, quantity));
-            System.out.println("Предмет додано.");
+            Clothes item;
+            switch (type) {
+                case 1:
+                    item = new Clothes(name, size, price, color, quantity, season);
+                    break;
+                case 2:
+                    int waist = ConsoleInput.readInt(scanner, "Талія (50-140 см): ", 50, 140);
+                    item = new Pants(name, size, price, color, quantity, season, waist);
+                    break;
+                case 3:
+                    int sleeve = ConsoleInput.readInt(scanner, "Рукав (1-120 см): ", 1, 120);
+                    item = new Shirts(name, size, price, color, quantity, season, sleeve);
+                    break;
+                default:
+                    return;
+            }
+            items.add(item);
+            System.out.println("Додано: " + item.getClass().getSimpleName());
         } catch (IllegalArgumentException exception) {
-            System.out.println("Не вдалося створити об'єкт: " + exception.getMessage());
+            System.out.println("Помилка створення: " + exception.getMessage());
         }
     }
 
-    /** Виводить колекцію. */
+    /** Виводить усі типи через посилання базового класу. */
     private static void printAll(ArrayList<Clothes> items) {
         if (items.isEmpty()) {
             System.out.println("Колекція порожня.");
             return;
         }
-        for (Clothes item : items) System.out.println(item.toString());
+        int index = 1;
+        for (Clothes item : items) {
+            System.out.println(index + ". [" + item.getClass().getSimpleName() + "] " + item.toString());
+            index++;
+        }
     }
 }
