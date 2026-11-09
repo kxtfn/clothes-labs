@@ -35,7 +35,7 @@ public final class Main {
             }
         }
 
-        System.out.println("Lab 14 | Variant 1 | Clothing Store");
+        System.out.println("Lab 15 | Variant 1 | Clothing Store");
         System.out.println("Loaded products: " + store.getProductCount());
         System.out.println("Total quantity: " + store.getTotalQuantity());
 
@@ -127,38 +127,26 @@ public final class Main {
 
             switch (choice) {
                 case 1:
-                    comparator = new Comparator<Clothes>() {
-                        @Override
-                        public int compare(Clothes first, Clothes second) {
-                            return first.getName().compareToIgnoreCase(
+                    comparator = (first, second) ->
+                            first.getName().compareToIgnoreCase(
                                     second.getName()
                             );
-                        }
-                    };
                     break;
 
                 case 2:
-                    comparator = new Comparator<Clothes>() {
-                        @Override
-                        public int compare(Clothes first, Clothes second) {
-                            return Double.compare(
+                    comparator = (first, second) ->
+                            Double.compare(
                                     first.getPrice(),
                                     second.getPrice()
                             );
-                        }
-                    };
                     break;
 
                 case 3:
-                    comparator = new Comparator<Clothes>() {
-                        @Override
-                        public int compare(Clothes first, Clothes second) {
-                            return Integer.compare(
+                    comparator = (first, second) ->
+                            Integer.compare(
                                     first.getSize(),
                                     second.getSize()
                             );
-                        }
-                    };
                     break;
 
                 default:
