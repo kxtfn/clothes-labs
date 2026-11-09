@@ -2,9 +2,10 @@
 package ua.edu.sumdu.oop;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 
 public final class Main {
@@ -33,7 +34,7 @@ public final class Main {
             }
         }
 
-        System.out.println("Lab 12 | Variant 1 | Clothing Store");
+        System.out.println("Lab 13 | Variant 1 | Clothing Store");
         System.out.println("Loaded products: " + store.getProductCount());
         System.out.println("Total quantity: " + store.getTotalQuantity());
 
@@ -44,12 +45,13 @@ public final class Main {
             System.out.println("1 - Search products");
             System.out.println("2 - Add new product");
             System.out.println("3 - View all products");
-            System.out.println("4 - Increase existing product quantity");
-            System.out.println("5 - Save products");
+            System.out.println("4 - Show sorted products");
+            System.out.println("5 - Increase existing product quantity");
+            System.out.println("6 - Save products");
             System.out.println("0 - Save and exit");
 
             int choice = ConsoleInput.readInt(
-                    scanner, "Your choice: ", 0, 5
+                    scanner, "Your choice: ", 0, 6
             );
 
             try {
@@ -67,10 +69,14 @@ public final class Main {
                         break;
 
                     case 4:
-                        increaseQuantity(scanner, store);
+                        showSortedProducts(store);
                         break;
 
                     case 5:
+                        increaseQuantity(scanner, store);
+                        break;
+
+                    case 6:
                         saveProducts(store, inputFile);
                         break;
 
@@ -226,6 +232,23 @@ public final class Main {
         System.out.println("Product added successfully.");
         System.out.println("Unique products: " + store.getProductCount());
         System.out.println("Total quantity: " + store.getTotalQuantity());
+    }
+
+    private static void showSortedProducts(Store store) {
+        System.out.println("\n========== SORTED PRODUCTS ==========");
+        System.out.println("Sorting criterion: Product name (A-Z)");
+
+        ArrayList<Clothes> sorted = store.getAll();
+
+        if (sorted.isEmpty()) {
+            System.out.println("Inventory is empty.");
+            return;
+        }
+
+        Collections.sort(sorted);
+        printProducts(sorted);
+
+        System.out.println("Total products: " + sorted.size());
     }
 
     private static void increaseQuantity(
