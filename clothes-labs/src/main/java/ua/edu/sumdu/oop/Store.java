@@ -11,7 +11,7 @@ public class Store {
 
     public Store(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Store name is required.");
+            throw new InvalidProductException("Store name is required.");
         }
 
         this.name = name.trim();
@@ -37,9 +37,12 @@ public class Store {
     }
 
     public void addNewClothes(Clothes product, int quantity) {
-        if (product == null || quantity <= 0) {
-            throw new IllegalArgumentException(
-                    "Product and positive quantity are required.");
+        if (product == null) {
+            throw new InvalidProductException("Product cannot be null.");
+        }
+        if (quantity <= 0) {
+            throw new InvalidProductException(
+                    "Quantity must be positive.");
         }
 
         for (Clothes existing : items) {
@@ -71,11 +74,11 @@ public class Store {
 
     public void increaseStock(int index, int quantity) {
         if (index < 0 || index >= items.size()) {
-            throw new IllegalArgumentException("Invalid product number.");
+            throw new InvalidProductException("Invalid product number.");
         }
 
         if (quantity <= 0) {
-            throw new IllegalArgumentException(
+            throw new InvalidProductException(
                     "Quantity must be positive.");
         }
 
@@ -91,74 +94,84 @@ public class Store {
         return item == null ? null : copyOf(item);
     }
 
-    public boolean updateProduct(String uuidText,
-                                 String field,
-                                 String value) {
+    public void updateProduct(String uuidText,
+                              String field,
+                              String value) {
         UUID uuid = parseUuid(uuidText);
         Clothes item = findInternal(uuid);
 
         if (item == null) {
-            return false;
+            throw new ProductNotFoundException(
+                    "Product not found: " + uuid);
         }
 
         if (field == null || value == null) {
-            throw new IllegalArgumentException(
+            throw new InvalidProductException(
                     "Field and value are required.");
         }
 
         Clothes updated = copyOf(item);
 
-        switch (field.toLowerCase()) {
-            case "name":
-                updated.setName(value);
-                break;
+        try {
+            switch (field.toLowerCase()) {
+                case "name":
+                    updated.setName(value);
+                    break;
 
-            case "size":
-                updated.setSize(Integer.parseInt(value.trim()));
-                break;
+                case "size":
+                    updated.setSize(Integer.parseInt(value.trim()));
+                    break;
 
-            case "price":
-                updated.setPrice(Double.parseDouble(
-                        value.trim().replace(',', '.')));
-                break;
+                case "price":
+                    updated.setPrice(Double.parseDouble(
+                            value.trim().replace(',', '.')));
+                    break;
 
-            case "color":
-                updated.setColor(value);
-                break;
+                case "color":
+                    updated.setColor(value);
+                    break;
 
-            case "quantity":
-                updated.setQuantity(Integer.parseInt(value.trim()));
-                break;
+                case "quantity":
+                    updated.setQuantity(Integer.parseInt(value.trim()));
+                    break;
 
-            default:
-                throw new IllegalArgumentException(
-                        "Unsupported field: " + field);
+                default:
+                    throw new InvalidProductException(
+                            "Unsupported field: " + field);
+            }
+        } catch (NumberFormatException ex) {
+            throw new InvalidProductException(
+                    "Invalid numeric value: " + value, ex);
+        } catch (IllegalArgumentException ex) {
+            if (ex instanceof InvalidProductException) {
+                throw ex;
+            }
+            throw new InvalidProductException(
+                    ex.getMessage(), ex);
         }
 
         for (Clothes other : items) {
             if (!other.getUuid().equals(uuid)
                     && sameProduct(other, updated)) {
-                throw new IllegalArgumentException(
+                throw new DuplicateProductException(
                         "Update would create a duplicate product.");
             }
         }
 
         int index = indexOf(uuid);
         items.set(index, updated);
-
-        return true;
     }
 
-    public boolean deleteProduct(String uuidText) {
+    public void deleteProduct(String uuidText) {
         UUID uuid = parseUuid(uuidText);
         int index = indexOf(uuid);
 
         if (index < 0) {
-            return false;
+            throw new ProductNotFoundException(
+                    "Product not found: " + uuid);
         }
 
         items.remove(index);
-        return true;
     }
 
     private int indexOf(UUID uuid) {
@@ -178,14 +191,14 @@ public class Store {
 
     private UUID parseUuid(String text) {
         if (text == null || text.trim().isEmpty()) {
-            throw new IllegalArgumentException("UUID is required.");
+            throw new InvalidProductException("UUID is required.");
         }
 
         try {
             return UUID.fromString(text.trim());
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(
-                    "Invalid UUID format.");
+            throw new InvalidProductException(
+                    "Invalid UUID format.", ex);
         }
     }
 
@@ -241,7 +254,7 @@ public class Store {
 
     public static Clothes copyOf(Clothes item) {
         if (item == null) {
-            throw new IllegalArgumentException("Product is null.");
+            throw new InvalidProductException("Product cannot be null.");
         }
 
         Clothes copy;
@@ -279,7 +292,7 @@ public class Store {
                     v.getSleeveLengthCm());
 
         } else {
-            throw new IllegalArgumentException(
+            throw new InvalidProductException(
                     "Unsupported product type.");
         }
 
