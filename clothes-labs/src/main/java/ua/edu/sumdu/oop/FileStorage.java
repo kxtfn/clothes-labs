@@ -5,53 +5,53 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 public final class FileStorage {
+
     private FileStorage() {
     }
 
     public static ArrayList<Clothes> load(Path file) {
-        ArrayList<Clothes> items = new ArrayList<Clothes>();
+        ArrayList<Clothes> result = new ArrayList<Clothes>();
 
         if (!Files.exists(file)) {
-            System.out.println(
-                    "input.txt not found. Starting with an empty inventory.");
-            return items;
+            System.out.println("Input file not found.");
+            return result;
         }
 
         try (BufferedReader reader = Files.newBufferedReader(
                 file, StandardCharsets.UTF_8)) {
 
             String line;
-            int lineNumber = 0;
+            int number = 0;
 
             while ((line = reader.readLine()) != null) {
-                lineNumber++;
+                number++;
 
                 if (line.trim().isEmpty()) {
                     continue;
                 }
 
                 try {
-                    items.add(parseLine(line));
+                    result.add(parse(line));
                 } catch (IllegalArgumentException ex) {
-                    System.out.println("Skipping line "
-                            + lineNumber + ": " + ex.getMessage());
+                    System.out.println("Invalid line " + number
+                            + ": " + ex.getMessage());
                 }
             }
         } catch (IOException ex) {
-            System.out.println("File read error: " + ex.getMessage());
+            System.out.println("Read error: " + ex.getMessage());
         }
 
-        return items;
+        return result;
     }
 
     public static void save(Path file, List<Clothes> items)
@@ -62,10 +62,7 @@ public final class FileStorage {
                 absolute.getFileName().toString() + ".tmp");
 
         try (BufferedWriter writer = Files.newBufferedWriter(
-                temp,
-                StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING)) {
+                temp, StandardCharsets.UTF_8)) {
 
             for (Clothes item : items) {
                 writer.write(serialize(item));
@@ -75,8 +72,8 @@ public final class FileStorage {
 
         try {
             Files.move(temp, absolute,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING);
+                    StandardCopyOption.REPLACE_EXISTING,
+                    StandardCopyOption.ATOMIC_MOVE);
         } catch (AtomicMoveNotSupportedException ex) {
             Files.move(temp, absolute,
                     StandardCopyOption.REPLACE_EXISTING);
@@ -84,14 +81,7 @@ public final class FileStorage {
     }
 
     private static String serialize(Clothes item) {
-        if (item == null) {
-            throw new IllegalArgumentException(
-                    "Cannot save a null product.");
-        }
-
-        String type = item.getClass().getSimpleName();
-
-        String base = type
+        String base = item.getClass().getSimpleName()
                 + "|" + encode(item.getName())
                 + "|" + item.getSize()
                 + "|" + item.getPrice()
@@ -99,97 +89,91 @@ public final class FileStorage {
                 + "|" + item.getQuantity()
                 + "|" + item.getSeason();
 
+        String extra;
+
         if (item instanceof Jeans) {
-            Jeans jeans = (Jeans) item;
-            return base + "|" + jeans.getWaistCm()
-                    + "|" + jeans.getDenimWeightOz();
+            Jeans v = (Jeans) item;
+            extra = "|" + v.getWaistCm()
+                    + "|" + v.getDenimWeightOz();
+        } else if (item instanceof TShirt) {
+            TShirt v = (TShirt) item;
+            extra = "|" + v.getSleeveLengthCm()
+                    + "|" + encode(v.getPrintText());
+        } else if (item instanceof Pants) {
+            extra = "|" + ((Pants) item).getWaistCm();
+        } else if (item instanceof Shirts) {
+            extra = "|" + ((Shirts) item).getSleeveLengthCm();
+        } else {
+            throw new IllegalArgumentException(
+                    "Unsupported product type.");
         }
 
-        if (item instanceof TShirt) {
-            TShirt shirt = (TShirt) item;
-            return base + "|" + shirt.getSleeveLengthCm()
-                    + "|" + encode(shirt.getPrintText());
-        }
-
-        if (item instanceof Pants) {
-            return base + "|"
-                    + ((Pants) item).getWaistCm();
-        }
-
-        if (item instanceof Shirts) {
-            return base + "|"
-                    + ((Shirts) item).getSleeveLengthCm();
-        }
-
-        throw new IllegalArgumentException(
-                "Unsupported type: " + type);
+        return base + extra + "|" + item.getUuid();
     }
 
-    private static Clothes parseLine(String line) {
+    private static Clothes parse(String line) {
         String[] p = line.split("\\|", -1);
 
-        if (p.length < 7) {
-            throw new IllegalArgumentException("Not enough fields.");
+        if (p.length < 8) {
+            throw new IllegalArgumentException("Missing fields.");
         }
 
-        try {
-            String type = p[0];
-            String name = decode(p[1]);
-            int size = Integer.parseInt(p[2]);
-            double price = Double.parseDouble(p[3]);
-            String color = decode(p[4]);
-            int quantity = Integer.parseInt(p[5]);
-            Season season = Season.valueOf(p[6]);
+        String type = p[0];
+        String name = decode(p[1]);
+        int size = Integer.parseInt(p[2]);
+        double price = Double.parseDouble(p[3]);
+        String color = decode(p[4]);
+        int quantity = Integer.parseInt(p[5]);
+        Season season = Season.valueOf(p[6]);
 
-            switch (type) {
-                case "Pants":
-                    checkCount(p, 8);
-                    return new Pants(
-                            name, size, price, color,
-                            quantity, season,
-                            Integer.parseInt(p[7]));
+        Clothes item;
+        int oldFieldCount;
 
-                case "Shirts":
-                    checkCount(p, 8);
-                    return new Shirts(
-                            name, size, price, color,
-                            quantity, season,
-                            Integer.parseInt(p[7]));
+        switch (type) {
+            case "Pants":
+                oldFieldCount = 8;
+                item = new Pants(name, size, price, color,
+                        quantity, season, Integer.parseInt(p[7]));
+                break;
 
-                case "Jeans":
-                    checkCount(p, 9);
-                    return new Jeans(
-                            name, size, price, color,
-                            quantity, season,
-                            Integer.parseInt(p[7]),
-                            Integer.parseInt(p[8]));
+            case "Shirts":
+                oldFieldCount = 8;
+                item = new Shirts(name, size, price, color,
+                        quantity, season, Integer.parseInt(p[7]));
+                break;
 
-                case "TShirt":
-                    checkCount(p, 9);
-                    return new TShirt(
-                            name, size, price, color,
-                            quantity, season,
-                            Integer.parseInt(p[7]),
-                            decode(p[8]));
+            case "Jeans":
+                if (p.length < 9) {
+                    throw new IllegalArgumentException("Missing fields.");
+                }
+                oldFieldCount = 9;
+                item = new Jeans(name, size, price, color,
+                        quantity, season, Integer.parseInt(p[7]),
+                        Integer.parseInt(p[8]));
+                break;
 
-                default:
-                    throw new IllegalArgumentException(
-                            "Unknown type: " + type);
-            }
-        } catch (IndexOutOfBoundsException ex) {
-            throw new IllegalArgumentException(
-                    "Not enough fields.", ex);
-        } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException(
-                    "Invalid data: " + ex.getMessage(), ex);
+            case "TShirt":
+                if (p.length < 9) {
+                    throw new IllegalArgumentException("Missing fields.");
+                }
+                oldFieldCount = 9;
+                item = new TShirt(name, size, price, color,
+                        quantity, season, Integer.parseInt(p[7]),
+                        decode(p[8]));
+                break;
+
+            default:
+                throw new IllegalArgumentException(
+                        "Unknown product type: " + type);
         }
-    }
 
-    private static void checkCount(String[] values, int expected) {
-        if (values.length != expected) {
-            throw new IllegalArgumentException(
-                    "Expected " + expected + " fields.");
+        if (p.length == oldFieldCount + 1) {
+            item.restoreUuid(UUID.fromString(p[oldFieldCount]));
+        } else if (p.length != oldFieldCount) {
+            throw new IllegalArgumentException("Invalid field count.");
         }
+
+        return item;
     }
 
     private static String encode(String value) {

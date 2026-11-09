@@ -2,8 +2,12 @@
 package ua.edu.sumdu.oop;
 
 import java.util.Objects;
+import java.util.UUID;
 
-public abstract class Clothes implements Comparable<Clothes> {
+public abstract class Clothes
+        implements Comparable<Clothes>, Identifiable {
+
+    private UUID uuid;
     private String name;
     private int size;
     private double price;
@@ -13,6 +17,7 @@ public abstract class Clothes implements Comparable<Clothes> {
 
     public Clothes(String name, int size, double price,
                    String color, int quantity, Season season) {
+        this.uuid = UUID.randomUUID();
         setName(name);
         setSize(size);
         setPrice(price);
@@ -22,14 +27,28 @@ public abstract class Clothes implements Comparable<Clothes> {
     }
 
     public Clothes(Clothes original) {
-        this(Objects.requireNonNull(original).name,
-                original.size, original.price, original.color,
-                original.quantity, original.season);
+        this(original.getName(), original.getSize(),
+                original.getPrice(), original.getColor(),
+                original.getQuantity(), original.getSeason());
+        this.uuid = original.getUuid();
+    }
+
+    @Override
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    void restoreUuid(UUID uuid) {
+        this.uuid = Objects.requireNonNull(uuid);
     }
 
     @Override
     public int compareTo(Clothes other) {
-        return name.compareToIgnoreCase(other.name);
+        int result = name.compareToIgnoreCase(other.name);
+        if (result != 0) {
+            return result;
+        }
+        return uuid.compareTo(other.uuid);
     }
 
     public String getName() {
@@ -73,8 +92,7 @@ public abstract class Clothes implements Comparable<Clothes> {
 
     public void setColor(String color) {
         if (color == null || color.trim().isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Color cannot be empty.");
+            throw new IllegalArgumentException("Color cannot be empty.");
         }
         this.color = color.trim();
     }
@@ -96,20 +114,24 @@ public abstract class Clothes implements Comparable<Clothes> {
     }
 
     public void setSeason(Season season) {
-        if (season == null) {
-            throw new IllegalArgumentException("Season is required.");
-        }
-        this.season = season;
+        this.season = Objects.requireNonNull(season);
+    }
+
+    public String toShortString() {
+        return getClass().getSimpleName() + ": " + name
+                + " | UUID: " + uuid;
     }
 
     @Override
     public String toString() {
-        return "Clothes{name='" + name
-                + "', size=" + size
-                + ", price=" + price
-                + ", color='" + color
-                + "', quantity=" + quantity
-                + ", season=" + season + "}";
+        return "Type: " + getClass().getSimpleName()
+                + " | UUID: " + uuid
+                + " | Name: " + name
+                + " | Size: " + size
+                + " | Price: " + price
+                + " | Color: " + color
+                + " | Quantity: " + quantity
+                + " | Season: " + season;
     }
 
     @Override
@@ -117,24 +139,22 @@ public abstract class Clothes implements Comparable<Clothes> {
         if (this == other) {
             return true;
         }
-
         if (other == null || getClass() != other.getClass()) {
             return false;
         }
 
-        Clothes that = (Clothes) other;
-
-        return size == that.size
-                && Double.compare(price, that.price) == 0
-                && quantity == that.quantity
-                && Objects.equals(name, that.name)
-                && Objects.equals(color, that.color)
-                && season == that.season;
+        Clothes item = (Clothes) other;
+        return size == item.size
+                && Double.compare(price, item.price) == 0
+                && quantity == item.quantity
+                && name.equals(item.name)
+                && color.equals(item.color)
+                && season == item.season;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                name, size, price, color, quantity, season);
+        return Objects.hash(getClass(), name, size,
+                price, color, quantity, season);
     }
 }

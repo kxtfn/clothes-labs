@@ -2,16 +2,20 @@
 package ua.edu.sumdu.oop;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class Store {
+
     private final String name;
-    private final ArrayList<Clothes> items = new ArrayList<Clothes>();
+    private final ArrayList<Clothes> items;
 
     public Store(String name) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Store name is required.");
         }
+
         this.name = name.trim();
+        this.items = new ArrayList<Clothes>();
     }
 
     public String getName() {
@@ -30,31 +34,43 @@ public class Store {
         return total;
     }
 
-    public void addNewClothes(Clothes cl, int quantity) {
-        if (cl == null || quantity <= 0) {
+    public void addNewClothes(Clothes product, int quantity) {
+        if (product == null || quantity <= 0) {
             throw new IllegalArgumentException(
                     "Product and positive quantity are required.");
         }
 
-        for (Clothes item : items) {
-            if (sameProduct(item, cl)) {
-                item.setQuantity(Math.addExact(
-                        item.getQuantity(), quantity));
+        for (Clothes existing : items) {
+            if (sameProduct(existing, product)) {
+                existing.setQuantity(Math.addExact(
+                        existing.getQuantity(), quantity));
                 return;
             }
         }
 
-        Clothes copy = copyOf(cl);
+        Clothes copy = copyOf(product);
         copy.setQuantity(quantity);
         items.add(copy);
+    }
+
+    private boolean sameProduct(Clothes first, Clothes second) {
+        if (first.getClass() != second.getClass()) {
+            return false;
+        }
+
+        Clothes a = copyOf(first);
+        Clothes b = copyOf(second);
+        a.setQuantity(0);
+        b.setQuantity(0);
+
+        return a.equals(b);
     }
 
     public void increaseStock(int index, int quantity) {
         if (index < 0 || index >= items.size()) {
             throw new IllegalArgumentException(
-                    "Product number is invalid.");
+                    "Invalid product number.");
         }
-
         if (quantity <= 0) {
             throw new IllegalArgumentException(
                     "Quantity must be positive.");
@@ -65,29 +81,36 @@ public class Store {
                 item.getQuantity(), quantity));
     }
 
-    private boolean sameProduct(Clothes a, Clothes b) {
-        if (a.getClass() != b.getClass()) {
-            return false;
+    public Clothes searchByUuid(String text) {
+        if (text == null) {
+            throw new IllegalArgumentException(
+                    "UUID cannot be empty.");
         }
 
-        Clothes first = copyOf(a);
-        Clothes second = copyOf(b);
-        first.setQuantity(0);
-        second.setQuantity(0);
+        UUID uuid;
 
-        return first.equals(second);
-    }
+        try {
+            uuid = UUID.fromString(text.trim());
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException(
+                    "Invalid UUID format.");
+        }
 
-    public ArrayList<Clothes> getAll() {
-        ArrayList<Clothes> result = new ArrayList<Clothes>();
         for (Clothes item : items) {
-            result.add(copyOf(item));
+            if (item.getUuid().equals(uuid)) {
+                return copyOf(item);
+            }
         }
-        return result;
+
+        return null;
     }
 
     public ArrayList<Clothes> searchByName(String name) {
         ArrayList<Clothes> result = new ArrayList<Clothes>();
+
+        if (name == null) {
+            return result;
+        }
 
         for (Clothes item : items) {
             if (item.getName().equalsIgnoreCase(name.trim())) {
@@ -119,37 +142,55 @@ public class Store {
         return result;
     }
 
-    public static Clothes copyOf(Clothes a) {
-        if (a instanceof Jeans) {
-            Jeans v = (Jeans) a;
-            return new Jeans(v.getName(), v.getSize(),
+    public ArrayList<Clothes> getAll() {
+        ArrayList<Clothes> result = new ArrayList<Clothes>();
+
+        for (Clothes item : items) {
+            result.add(copyOf(item));
+        }
+
+        return result;
+    }
+
+    public static Clothes copyOf(Clothes item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Product is null.");
+        }
+
+        Clothes copy;
+
+        if (item instanceof Jeans) {
+            Jeans v = (Jeans) item;
+            copy = new Jeans(v.getName(), v.getSize(),
                     v.getPrice(), v.getColor(), v.getQuantity(),
                     v.getSeason(), v.getWaistCm(),
                     v.getDenimWeightOz());
-        }
 
-        if (a instanceof TShirt) {
-            TShirt v = (TShirt) a;
-            return new TShirt(v.getName(), v.getSize(),
+        } else if (item instanceof TShirt) {
+            TShirt v = (TShirt) item;
+            copy = new TShirt(v.getName(), v.getSize(),
                     v.getPrice(), v.getColor(), v.getQuantity(),
                     v.getSeason(), v.getSleeveLengthCm(),
                     v.getPrintText());
-        }
 
-        if (a instanceof Pants) {
-            Pants v = (Pants) a;
-            return new Pants(v.getName(), v.getSize(),
+        } else if (item instanceof Pants) {
+            Pants v = (Pants) item;
+            copy = new Pants(v.getName(), v.getSize(),
                     v.getPrice(), v.getColor(), v.getQuantity(),
                     v.getSeason(), v.getWaistCm());
-        }
 
-        if (a instanceof Shirts) {
-            Shirts v = (Shirts) a;
-            return new Shirts(v.getName(), v.getSize(),
+        } else if (item instanceof Shirts) {
+            Shirts v = (Shirts) item;
+            copy = new Shirts(v.getName(), v.getSize(),
                     v.getPrice(), v.getColor(), v.getQuantity(),
                     v.getSeason(), v.getSleeveLengthCm());
+
+        } else {
+            throw new IllegalArgumentException(
+                    "Unsupported product type.");
         }
 
-        throw new IllegalArgumentException("Unsupported product type.");
+        copy.restoreUuid(item.getUuid());
+        return copy;
     }
 }
