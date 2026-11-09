@@ -15,7 +15,7 @@ public class Store {
         }
 
         this.name = name.trim();
-        this.items = new ArrayList<Clothes>();
+        this.items = new ArrayList<>();
     }
 
     public String getName() {
@@ -28,9 +28,11 @@ public class Store {
 
     public int getTotalQuantity() {
         int total = 0;
+
         for (Clothes item : items) {
             total = Math.addExact(total, item.getQuantity());
         }
+
         return total;
     }
 
@@ -60,6 +62,7 @@ public class Store {
 
         Clothes a = copyOf(first);
         Clothes b = copyOf(second);
+
         a.setQuantity(0);
         b.setQuantity(0);
 
@@ -68,9 +71,9 @@ public class Store {
 
     public void increaseStock(int index, int quantity) {
         if (index < 0 || index >= items.size()) {
-            throw new IllegalArgumentException(
-                    "Invalid product number.");
+            throw new IllegalArgumentException("Invalid product number.");
         }
+
         if (quantity <= 0) {
             throw new IllegalArgumentException(
                     "Quantity must be positive.");
@@ -82,31 +85,112 @@ public class Store {
     }
 
     public Clothes searchByUuid(String text) {
-        if (text == null) {
-            throw new IllegalArgumentException(
-                    "UUID cannot be empty.");
+        UUID uuid = parseUuid(text);
+        Clothes item = findInternal(uuid);
+
+        return item == null ? null : copyOf(item);
+    }
+
+    public boolean updateProduct(String uuidText,
+                                 String field,
+                                 String value) {
+        UUID uuid = parseUuid(uuidText);
+        Clothes item = findInternal(uuid);
+
+        if (item == null) {
+            return false;
         }
 
-        UUID uuid;
+        if (field == null || value == null) {
+            throw new IllegalArgumentException(
+                    "Field and value are required.");
+        }
+
+        Clothes updated = copyOf(item);
+
+        switch (field.toLowerCase()) {
+            case "name":
+                updated.setName(value);
+                break;
+
+            case "size":
+                updated.setSize(Integer.parseInt(value.trim()));
+                break;
+
+            case "price":
+                updated.setPrice(Double.parseDouble(
+                        value.trim().replace(',', '.')));
+                break;
+
+            case "color":
+                updated.setColor(value);
+                break;
+
+            case "quantity":
+                updated.setQuantity(Integer.parseInt(value.trim()));
+                break;
+
+            default:
+                throw new IllegalArgumentException(
+                        "Unsupported field: " + field);
+        }
+
+        for (Clothes other : items) {
+            if (!other.getUuid().equals(uuid)
+                    && sameProduct(other, updated)) {
+                throw new IllegalArgumentException(
+                        "Update would create a duplicate product.");
+            }
+        }
+
+        int index = indexOf(uuid);
+        items.set(index, updated);
+
+        return true;
+    }
+
+    public boolean deleteProduct(String uuidText) {
+        UUID uuid = parseUuid(uuidText);
+        int index = indexOf(uuid);
+
+        if (index < 0) {
+            return false;
+        }
+
+        items.remove(index);
+        return true;
+    }
+
+    private int indexOf(UUID uuid) {
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i).getUuid().equals(uuid)) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private Clothes findInternal(UUID uuid) {
+        int index = indexOf(uuid);
+        return index < 0 ? null : items.get(index);
+    }
+
+    private UUID parseUuid(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("UUID is required.");
+        }
 
         try {
-            uuid = UUID.fromString(text.trim());
+            return UUID.fromString(text.trim());
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException(
                     "Invalid UUID format.");
         }
-
-        for (Clothes item : items) {
-            if (item.getUuid().equals(uuid)) {
-                return copyOf(item);
-            }
-        }
-
-        return null;
     }
 
     public ArrayList<Clothes> searchByName(String name) {
-        ArrayList<Clothes> result = new ArrayList<Clothes>();
+        ArrayList<Clothes> result = new ArrayList<>();
 
         if (name == null) {
             return result;
@@ -117,33 +201,36 @@ public class Store {
                 result.add(copyOf(item));
             }
         }
+
         return result;
     }
 
     public ArrayList<Clothes> searchBySize(int size) {
-        ArrayList<Clothes> result = new ArrayList<Clothes>();
+        ArrayList<Clothes> result = new ArrayList<>();
 
         for (Clothes item : items) {
             if (item.getSize() == size) {
                 result.add(copyOf(item));
             }
         }
+
         return result;
     }
 
     public ArrayList<Clothes> searchBySeason(Season season) {
-        ArrayList<Clothes> result = new ArrayList<Clothes>();
+        ArrayList<Clothes> result = new ArrayList<>();
 
         for (Clothes item : items) {
             if (item.getSeason() == season) {
                 result.add(copyOf(item));
             }
         }
+
         return result;
     }
 
     public ArrayList<Clothes> getAll() {
-        ArrayList<Clothes> result = new ArrayList<Clothes>();
+        ArrayList<Clothes> result = new ArrayList<>();
 
         for (Clothes item : items) {
             result.add(copyOf(item));
@@ -161,29 +248,35 @@ public class Store {
 
         if (item instanceof Jeans) {
             Jeans v = (Jeans) item;
-            copy = new Jeans(v.getName(), v.getSize(),
-                    v.getPrice(), v.getColor(), v.getQuantity(),
-                    v.getSeason(), v.getWaistCm(),
-                    v.getDenimWeightOz());
+
+            copy = new Jeans(
+                    v.getName(), v.getSize(), v.getPrice(),
+                    v.getColor(), v.getQuantity(), v.getSeason(),
+                    v.getWaistCm(), v.getDenimWeightOz());
 
         } else if (item instanceof TShirt) {
             TShirt v = (TShirt) item;
-            copy = new TShirt(v.getName(), v.getSize(),
-                    v.getPrice(), v.getColor(), v.getQuantity(),
-                    v.getSeason(), v.getSleeveLengthCm(),
-                    v.getPrintText());
+
+            copy = new TShirt(
+                    v.getName(), v.getSize(), v.getPrice(),
+                    v.getColor(), v.getQuantity(), v.getSeason(),
+                    v.getSleeveLengthCm(), v.getPrintText());
 
         } else if (item instanceof Pants) {
             Pants v = (Pants) item;
-            copy = new Pants(v.getName(), v.getSize(),
-                    v.getPrice(), v.getColor(), v.getQuantity(),
-                    v.getSeason(), v.getWaistCm());
+
+            copy = new Pants(
+                    v.getName(), v.getSize(), v.getPrice(),
+                    v.getColor(), v.getQuantity(), v.getSeason(),
+                    v.getWaistCm());
 
         } else if (item instanceof Shirts) {
             Shirts v = (Shirts) item;
-            copy = new Shirts(v.getName(), v.getSize(),
-                    v.getPrice(), v.getColor(), v.getQuantity(),
-                    v.getSeason(), v.getSleeveLengthCm());
+
+            copy = new Shirts(
+                    v.getName(), v.getSize(), v.getPrice(),
+                    v.getColor(), v.getQuantity(), v.getSeason(),
+                    v.getSleeveLengthCm());
 
         } else {
             throw new IllegalArgumentException(
