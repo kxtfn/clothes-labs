@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Scanner;
 
 public final class Main {
@@ -34,7 +35,7 @@ public final class Main {
             }
         }
 
-        System.out.println("Lab 13 | Variant 1 | Clothing Store");
+        System.out.println("Lab 14 | Variant 1 | Clothing Store");
         System.out.println("Loaded products: " + store.getProductCount());
         System.out.println("Total quantity: " + store.getTotalQuantity());
 
@@ -69,7 +70,7 @@ public final class Main {
                         break;
 
                     case 4:
-                        showSortedProducts(store);
+                        sortingMenu(scanner, store);
                         break;
 
                     case 5:
@@ -97,6 +98,79 @@ public final class Main {
         }
 
         System.out.println("Program finished.");
+    }
+
+    private static void sortingMenu(Scanner scanner, Store store) {
+        while (true) {
+            System.out.println("\n========== SORTING MENU ==========");
+            System.out.println("1 - Sort by name (A-Z)");
+            System.out.println("2 - Sort by price (ascending)");
+            System.out.println("3 - Sort by size (ascending)");
+            System.out.println("0 - Back to main menu");
+
+            int choice = ConsoleInput.readInt(
+                    scanner, "Sorting criterion: ", 0, 3
+            );
+
+            if (choice == 0) {
+                return;
+            }
+
+            ArrayList<Clothes> sorted = store.getAll();
+
+            if (sorted.isEmpty()) {
+                System.out.println("Inventory is empty.");
+                continue;
+            }
+
+            Comparator<Clothes> comparator;
+
+            switch (choice) {
+                case 1:
+                    comparator = new Comparator<Clothes>() {
+                        @Override
+                        public int compare(Clothes first, Clothes second) {
+                            return first.getName().compareToIgnoreCase(
+                                    second.getName()
+                            );
+                        }
+                    };
+                    break;
+
+                case 2:
+                    comparator = new Comparator<Clothes>() {
+                        @Override
+                        public int compare(Clothes first, Clothes second) {
+                            return Double.compare(
+                                    first.getPrice(),
+                                    second.getPrice()
+                            );
+                        }
+                    };
+                    break;
+
+                case 3:
+                    comparator = new Comparator<Clothes>() {
+                        @Override
+                        public int compare(Clothes first, Clothes second) {
+                            return Integer.compare(
+                                    first.getSize(),
+                                    second.getSize()
+                            );
+                        }
+                    };
+                    break;
+
+                default:
+                    continue;
+            }
+
+            Collections.sort(sorted, comparator);
+
+            System.out.println("\n========== SORTED PRODUCTS ==========");
+            printProducts(sorted);
+            System.out.println("Total products: " + sorted.size());
+        }
     }
 
     private static void searchMenu(Scanner scanner, Store store) {
@@ -232,23 +306,6 @@ public final class Main {
         System.out.println("Product added successfully.");
         System.out.println("Unique products: " + store.getProductCount());
         System.out.println("Total quantity: " + store.getTotalQuantity());
-    }
-
-    private static void showSortedProducts(Store store) {
-        System.out.println("\n========== SORTED PRODUCTS ==========");
-        System.out.println("Sorting criterion: Product name (A-Z)");
-
-        ArrayList<Clothes> sorted = store.getAll();
-
-        if (sorted.isEmpty()) {
-            System.out.println("Inventory is empty.");
-            return;
-        }
-
-        Collections.sort(sorted);
-        printProducts(sorted);
-
-        System.out.println("Total products: " + sorted.size());
     }
 
     private static void increaseQuantity(
