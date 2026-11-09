@@ -4,39 +4,42 @@ package ua.edu.sumdu.oop;
 import java.util.ArrayList;
 
 public class Store {
-
     private final String name;
-    private final ArrayList<Clothes> items;
+    private final ArrayList<Clothes> items = new ArrayList<Clothes>();
 
     public Store(String name) {
         if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Store name cannot be empty.");
+            throw new IllegalArgumentException("Store name is required.");
         }
-
         this.name = name.trim();
-        this.items = new ArrayList<Clothes>();
     }
 
     public String getName() {
         return name;
     }
 
+    public int getProductCount() {
+        return items.size();
+    }
+
+    public int getTotalQuantity() {
+        int total = 0;
+        for (Clothes item : items) {
+            total = Math.addExact(total, item.getQuantity());
+        }
+        return total;
+    }
+
     public void addNewClothes(Clothes cl, int quantity) {
-        if (cl == null) {
-            throw new IllegalArgumentException("Product cannot be null.");
+        if (cl == null || quantity <= 0) {
+            throw new IllegalArgumentException(
+                    "Product and positive quantity are required.");
         }
 
-        if (quantity <= 0) {
-            throw new IllegalArgumentException("Quantity must be positive.");
-        }
-
-        for (Clothes existing : items) {
-            if (sameProduct(existing, cl)) {
-                int newQuantity = Math.addExact(
-                        existing.getQuantity(), quantity
-                );
-
-                existing.setQuantity(newQuantity);
+        for (Clothes item : items) {
+            if (sameProduct(item, cl)) {
+                item.setQuantity(Math.addExact(
+                        item.getQuantity(), quantity));
                 return;
             }
         }
@@ -46,59 +49,51 @@ public class Store {
         items.add(copy);
     }
 
-    private boolean sameProduct(Clothes first, Clothes second) {
-        if (first.getClass() != second.getClass()) {
+    public void increaseStock(int index, int quantity) {
+        if (index < 0 || index >= items.size()) {
+            throw new IllegalArgumentException(
+                    "Product number is invalid.");
+        }
+
+        if (quantity <= 0) {
+            throw new IllegalArgumentException(
+                    "Quantity must be positive.");
+        }
+
+        Clothes item = items.get(index);
+        item.setQuantity(Math.addExact(
+                item.getQuantity(), quantity));
+    }
+
+    private boolean sameProduct(Clothes a, Clothes b) {
+        if (a.getClass() != b.getClass()) {
             return false;
         }
 
-        Clothes firstCopy = copyOf(first);
-        Clothes secondCopy = copyOf(second);
+        Clothes first = copyOf(a);
+        Clothes second = copyOf(b);
+        first.setQuantity(0);
+        second.setQuantity(0);
 
-        firstCopy.setQuantity(0);
-        secondCopy.setQuantity(0);
-
-        return firstCopy.equals(secondCopy);
+        return first.equals(second);
     }
 
     public ArrayList<Clothes> getAll() {
         ArrayList<Clothes> result = new ArrayList<Clothes>();
-
         for (Clothes item : items) {
             result.add(copyOf(item));
         }
-
         return result;
-    }
-
-    public int getProductCount() {
-        return items.size();
-    }
-
-    public int getTotalQuantity() {
-        int total = 0;
-
-        for (Clothes item : items) {
-            total = Math.addExact(total, item.getQuantity());
-        }
-
-        return total;
     }
 
     public ArrayList<Clothes> searchByName(String name) {
         ArrayList<Clothes> result = new ArrayList<Clothes>();
 
-        if (name == null || name.trim().isEmpty()) {
-            return result;
-        }
-
-        String searchName = name.trim();
-
         for (Clothes item : items) {
-            if (item.getName().equalsIgnoreCase(searchName)) {
+            if (item.getName().equalsIgnoreCase(name.trim())) {
                 result.add(copyOf(item));
             }
         }
-
         return result;
     }
 
@@ -110,87 +105,49 @@ public class Store {
                 result.add(copyOf(item));
             }
         }
-
         return result;
     }
 
     public ArrayList<Clothes> searchBySeason(Season season) {
         ArrayList<Clothes> result = new ArrayList<Clothes>();
 
-        if (season == null) {
-            return result;
-        }
-
         for (Clothes item : items) {
             if (item.getSeason() == season) {
                 result.add(copyOf(item));
             }
         }
-
         return result;
     }
 
-    public static Clothes copyOf(Clothes item) {
-        if (item == null) {
-            throw new IllegalArgumentException("Product cannot be null.");
+    public static Clothes copyOf(Clothes a) {
+        if (a instanceof Jeans) {
+            Jeans v = (Jeans) a;
+            return new Jeans(v.getName(), v.getSize(),
+                    v.getPrice(), v.getColor(), v.getQuantity(),
+                    v.getSeason(), v.getWaistCm(),
+                    v.getDenimWeightOz());
         }
 
-        if (item instanceof Jeans) {
-            Jeans jeans = (Jeans) item;
-
-            return new Jeans(
-                    jeans.getName(),
-                    jeans.getSize(),
-                    jeans.getPrice(),
-                    jeans.getColor(),
-                    jeans.getQuantity(),
-                    jeans.getSeason(),
-                    jeans.getWaistCm(),
-                    jeans.getDenimWeightOz()
-            );
+        if (a instanceof TShirt) {
+            TShirt v = (TShirt) a;
+            return new TShirt(v.getName(), v.getSize(),
+                    v.getPrice(), v.getColor(), v.getQuantity(),
+                    v.getSeason(), v.getSleeveLengthCm(),
+                    v.getPrintText());
         }
 
-        if (item instanceof TShirt) {
-            TShirt shirt = (TShirt) item;
-
-            return new TShirt(
-                    shirt.getName(),
-                    shirt.getSize(),
-                    shirt.getPrice(),
-                    shirt.getColor(),
-                    shirt.getQuantity(),
-                    shirt.getSeason(),
-                    shirt.getSleeveLengthCm(),
-                    shirt.getPrintText()
-            );
+        if (a instanceof Pants) {
+            Pants v = (Pants) a;
+            return new Pants(v.getName(), v.getSize(),
+                    v.getPrice(), v.getColor(), v.getQuantity(),
+                    v.getSeason(), v.getWaistCm());
         }
 
-        if (item instanceof Pants) {
-            Pants pants = (Pants) item;
-
-            return new Pants(
-                    pants.getName(),
-                    pants.getSize(),
-                    pants.getPrice(),
-                    pants.getColor(),
-                    pants.getQuantity(),
-                    pants.getSeason(),
-                    pants.getWaistCm()
-            );
-        }
-
-        if (item instanceof Shirts) {
-            Shirts shirts = (Shirts) item;
-
-            return new Shirts(
-                    shirts.getName(),
-                    shirts.getSize(),
-                    shirts.getPrice(),
-                    shirts.getColor(),
-                    shirts.getQuantity(),
-                    shirts.getSeason(),
-                    shirts.getSleeveLengthCm()
-            );
+        if (a instanceof Shirts) {
+            Shirts v = (Shirts) a;
+            return new Shirts(v.getName(), v.getSize(),
+                    v.getPrice(), v.getColor(), v.getQuantity(),
+                    v.getSeason(), v.getSleeveLengthCm());
         }
 
         throw new IllegalArgumentException("Unsupported product type.");

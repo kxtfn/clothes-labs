@@ -3,33 +3,53 @@ package ua.edu.sumdu.oop;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 public final class Main {
-
-    private static final Path FILE = Path.of("input.txt");
 
     private Main() {
     }
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
+
+        Path inputFile = Path.of("input.txt");
+
+        if (!Files.exists(inputFile)) {
+            inputFile = Path.of("clothes-labs", "input.txt");
+        }
+
         Store store = new Store("Clothing Store");
 
-        loadProducts(store);
+        ArrayList<Clothes> loaded = FileStorage.load(inputFile);
 
-        System.out.println("Lab 11 | Variant 1 | Clothing Store");
-        System.out.println("Store: " + store.getName());
+        for (Clothes item : loaded) {
+            try {
+                store.addNewClothes(item, item.getQuantity());
+            } catch (IllegalArgumentException ex) {
+                System.out.println("Loading error: " + ex.getMessage());
+            }
+        }
+
+        System.out.println("Lab 12 | Variant 1 | Clothing Store");
         System.out.println("Loaded products: " + store.getProductCount());
+        System.out.println("Total quantity: " + store.getTotalQuantity());
 
         boolean running = true;
 
         while (running) {
-            printMainMenu();
+            System.out.println("\n========== MAIN MENU ==========");
+            System.out.println("1 - Search products");
+            System.out.println("2 - Add new product");
+            System.out.println("3 - View all products");
+            System.out.println("4 - Increase existing product quantity");
+            System.out.println("5 - Save products");
+            System.out.println("0 - Save and exit");
 
             int choice = ConsoleInput.readInt(
-                    scanner, "Your choice: ", 0, 3
+                    scanner, "Your choice: ", 0, 5
             );
 
             try {
@@ -43,16 +63,24 @@ public final class Main {
                         break;
 
                     case 3:
-                        printAllProducts(store);
+                        showProducts(store);
+                        break;
+
+                    case 4:
+                        increaseQuantity(scanner, store);
+                        break;
+
+                    case 5:
+                        saveProducts(store, inputFile);
                         break;
 
                     case 0:
-                        saveProducts(store);
+                        saveProducts(store, inputFile);
                         running = false;
                         break;
 
                     default:
-                        System.out.println("Invalid menu option.");
+                        System.out.println("Invalid option.");
                         break;
                 }
             } catch (IllegalArgumentException ex) {
@@ -65,47 +93,59 @@ public final class Main {
         System.out.println("Program finished.");
     }
 
-    private static void printMainMenu() {
-        System.out.println();
-        System.out.println("========== MAIN MENU ==========");
-        System.out.println("1 - Search products");
-        System.out.println("2 - Add new product");
-        System.out.println("3 - View all products");
-        System.out.println("0 - Save and exit");
-        System.out.println("===============================");
-    }
+    private static void searchMenu(Scanner scanner, Store store) {
+        while (true) {
+            System.out.println("\n========== SEARCH MENU ==========");
+            System.out.println("1 - Search by name");
+            System.out.println("2 - Search by size");
+            System.out.println("3 - Search by season");
+            System.out.println("0 - Back");
 
-    private static void loadProducts(Store store) {
-        ArrayList<Clothes> loaded = FileStorage.load(FILE);
+            int choice = ConsoleInput.readInt(
+                    scanner, "Choice: ", 0, 3
+            );
 
-        for (Clothes item : loaded) {
-            try {
-                store.addNewClothes(item, item.getQuantity());
-            } catch (IllegalArgumentException ex) {
-                System.out.println(
-                        "Skipping invalid product: " + ex.getMessage()
-                );
+            if (choice == 0) {
+                return;
             }
-        }
-    }
 
-    private static void saveProducts(Store store) {
-        try {
-            FileStorage.save(FILE, store.getAll());
-            System.out.println("Products saved to input.txt.");
-        } catch (IOException ex) {
-            System.out.println("File saving error: " + ex.getMessage());
+            ArrayList<Clothes> results;
+
+            switch (choice) {
+                case 1:
+                    String name = ConsoleInput.readText(
+                            scanner, "Product name: "
+                    );
+                    results = store.searchByName(name);
+                    break;
+
+                case 2:
+                    int size = ConsoleInput.readInt(
+                            scanner, "Size (32-70): ", 32, 70
+                    );
+                    results = store.searchBySize(size);
+                    break;
+
+                case 3:
+                    Season season = ConsoleInput.readSeason(scanner);
+                    results = store.searchBySeason(season);
+                    break;
+
+                default:
+                    return;
+            }
+
+            printProducts(results);
         }
     }
 
     private static void addProduct(Scanner scanner, Store store) {
-        System.out.println();
-        System.out.println("========== ADD PRODUCT ==========");
+        System.out.println("\n========== ADD PRODUCT ==========");
         System.out.println("1 - Pants");
         System.out.println("2 - Shirts");
         System.out.println("3 - Jeans");
         System.out.println("4 - TShirt");
-        System.out.println("0 - Back to main menu");
+        System.out.println("0 - Back");
 
         int type = ConsoleInput.readInt(
                 scanner, "Product type: ", 0, 4
@@ -116,7 +156,7 @@ public final class Main {
         }
 
         String name = ConsoleInput.readText(
-                scanner, "Product name: "
+                scanner, "Name: "
         );
 
         int size = ConsoleInput.readInt(
@@ -132,7 +172,7 @@ public final class Main {
         );
 
         int quantity = ConsoleInput.readInt(
-                scanner, "Quantity (1-100000): ", 1, 100000
+                scanner, "Quantity: ", 1, 100000
         );
 
         Season season = ConsoleInput.readSeason(scanner);
@@ -150,24 +190,24 @@ public final class Main {
                         quantity, season, waist
                 );
             } else {
-                int denimWeight = ConsoleInput.readInt(
+                int weight = ConsoleInput.readInt(
                         scanner, "Denim weight (5-30 oz): ", 5, 30
                 );
 
                 product = new Jeans(
                         name, size, price, color,
-                        quantity, season, waist, denimWeight
+                        quantity, season, waist, weight
                 );
             }
         } else {
-            int sleeveLength = ConsoleInput.readInt(
+            int sleeve = ConsoleInput.readInt(
                     scanner, "Sleeve length (1-120 cm): ", 1, 120
             );
 
             if (type == 2) {
                 product = new Shirts(
                         name, size, price, color,
-                        quantity, season, sleeveLength
+                        quantity, season, sleeve
                 );
             } else {
                 String printText = ConsoleInput.readText(
@@ -176,7 +216,7 @@ public final class Main {
 
                 product = new TShirt(
                         name, size, price, color,
-                        quantity, season, sleeveLength, printText
+                        quantity, season, sleeve, printText
                 );
             }
         }
@@ -184,98 +224,75 @@ public final class Main {
         store.addNewClothes(product, quantity);
 
         System.out.println("Product added successfully.");
-        System.out.println(
-                "Unique products: " + store.getProductCount()
-        );
-        System.out.println(
-                "Total quantity: " + store.getTotalQuantity()
-        );
+        System.out.println("Unique products: " + store.getProductCount());
+        System.out.println("Total quantity: " + store.getTotalQuantity());
     }
 
-    private static void searchMenu(Scanner scanner, Store store) {
-        boolean searching = true;
+    private static void increaseQuantity(
+            Scanner scanner, Store store) {
 
-        while (searching) {
-            System.out.println();
-            System.out.println("========== SEARCH MENU ==========");
-            System.out.println("1 - Search by name");
-            System.out.println("2 - Search by size");
-            System.out.println("3 - Search by season");
-            System.out.println("0 - Back to main menu");
+        ArrayList<Clothes> products = store.getAll();
 
-            int choice = ConsoleInput.readInt(
-                    scanner, "Search criterion: ", 0, 3
-            );
-
-            ArrayList<Clothes> results;
-
-            switch (choice) {
-                case 1:
-                    String name = ConsoleInput.readText(
-                            scanner, "Enter product name: "
-                    );
-
-                    results = store.searchByName(name);
-                    printProducts(results);
-                    break;
-
-                case 2:
-                    int size = ConsoleInput.readInt(
-                            scanner, "Enter size (32-70): ", 32, 70
-                    );
-
-                    results = store.searchBySize(size);
-                    printProducts(results);
-                    break;
-
-                case 3:
-                    Season season = ConsoleInput.readSeason(scanner);
-
-                    results = store.searchBySeason(season);
-                    printProducts(results);
-                    break;
-
-                case 0:
-                    searching = false;
-                    break;
-
-                default:
-                    System.out.println("Invalid search criterion.");
-                    break;
-            }
+        if (products.isEmpty()) {
+            System.out.println("Inventory is empty.");
+            return;
         }
+
+        System.out.println("\n========== INCREASE STOCK ==========");
+        printProducts(products);
+
+        int number = ConsoleInput.readInt(
+                scanner,
+                "Select product number (0 to cancel): ",
+                0,
+                products.size()
+        );
+
+        if (number == 0) {
+            return;
+        }
+
+        int quantity = ConsoleInput.readInt(
+                scanner,
+                "Additional quantity: ",
+                1,
+                100000
+        );
+
+        store.increaseStock(number - 1, quantity);
+
+        System.out.println("Stock updated successfully.");
+        System.out.println("Total quantity: " + store.getTotalQuantity());
     }
 
-    private static void printAllProducts(Store store) {
-        System.out.println();
-        System.out.println("========== STORE INVENTORY ==========");
-        System.out.println("Store: " + store.getName());
-
+    private static void showProducts(Store store) {
+        System.out.println("\n========== INVENTORY ==========");
         printProducts(store.getAll());
 
-        System.out.println(
-                "Unique products: " + store.getProductCount()
-        );
-        System.out.println(
-                "Total quantity: " + store.getTotalQuantity()
-        );
+        System.out.println("Unique products: " + store.getProductCount());
+        System.out.println("Total quantity: " + store.getTotalQuantity());
     }
 
     private static void printProducts(ArrayList<Clothes> products) {
         if (products.isEmpty()) {
-            System.out.println("No matching products found.");
+            System.out.println("No products found.");
             return;
         }
 
-        System.out.println();
-        System.out.println("Products:");
-
         for (int i = 0; i < products.size(); i++) {
-            System.out.println(
-                    (i + 1) + ". " + products.get(i)
-            );
+            System.out.println((i + 1) + ". " + products.get(i));
         }
+    }
 
-        System.out.println("Found products: " + products.size());
+    private static void saveProducts(
+            Store store, Path inputFile) {
+
+        try {
+            FileStorage.save(inputFile, store.getAll());
+            System.out.println("Products saved successfully.");
+            System.out.println("File: " + inputFile.toAbsolutePath());
+        } catch (IOException ex) {
+            System.out.println("Saving error: " + ex.getMessage());
+        }
     }
 }
